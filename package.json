@@ -12,13 +12,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/philschatz/project-bot.git"
+    "url": "git+https://github.com/scacner/project-bot.git"
   },
-  "author": "Philip Schatz",
+  "author": "Steven Cacner",
+  "contributors": [
+    "Philip Schatz"
+  ],
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/philschatz/project-bot/issues"
+    "url": "https://github.com/scacner/project-bot/issues"
   },
-  "homepage": "https://github.com/philschatz/project-bot#readme",
+  "homepage": "https://github.com/scacner/project-bot#readme",
   "now": {
     "alias": "project-bot",
     "dotenv": ".env"
