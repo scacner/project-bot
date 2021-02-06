@@ -1,4 +1,5 @@
 function ALWAYS_TRUE () { return true }
+function ALWAYS_FALSE () { return false }
 
 module.exports = [
   { ruleName: 'edited_issue', webhookName: 'issues.edited', ruleMatcher: ALWAYS_TRUE },
@@ -139,6 +140,92 @@ module.exports = [
       } else {
         return false
       }
+    }
+  },
+  {
+    modifyIssue: true,
+    ruleName: 'add_label',
+    webhookName: 'project_card.moved',
+    ruleMatcher: ALWAYS_FALSE,
+    ruleAction: async function (logger, context, issueUrl, projectId, columnId, ruleArgs) {
+      // Currently, this rule will only apply the first label name provided in ruleArgs
+      if (ruleArgs.length === 0) {
+        logger.error(`No label names provided for "add_label" rule`)
+        return false
+      }
+
+      const projectUrl = context.payload.project_card.project_url
+      const contextProjectIdRegexMatch = projectUrl.match(/\d+$/)
+      const contextProjectId = contextProjectIdRegexMatch != null && contextProjectIdRegexMatch.length === 1
+        ? Number(contextProjectIdRegexMatch[0]) : null
+      if (contextProjectId === null) {
+        logger.error(`Unable to parse project number from Project URL "${projectUrl}"`)
+        return false
+      }
+      const contextColumnId = context.payload.project_card.column_id
+
+      if (contextProjectId !== projectId || contextColumnId !== columnId) {
+        return false
+      }
+
+      const graphResourceResult = context.github.graphql(`
+        query FindIssueID($issueUrl: URI!) {
+          resource(url: $issueUrl) {
+            ... on Issue {
+              id
+              repository {
+                name
+                owner {
+                  login
+                }
+              }
+            }
+          }
+        }
+      `, { issueUrl: issueUrl })
+      const { resource } = graphResourceResult
+      const issueId = resource.id
+      const repoName = resource.repository.name
+      const repoOwner = resource.repository.owner.login
+
+      const graphLabelResult = context.github.graphql(`
+        query FindLabelID(
+          $labelName: String!,
+          $repoName: String!,
+          $repoOwner: String!
+        ) {
+          repository(owner:$repoOwner, name:$repoName) {
+            label(name:$labelName) {
+              id
+            }
+          }
+        }
+      `, { labelName: ruleArgs[0], repoName: repoName, repoOwner: repoOwner })
+      const { repository } = graphLabelResult
+      const labelId = repository.label.id
+
+      logger.info(`Adding Label ${labelId} to Issue "${issueId}" because of "add_label", Issue URL "${issueUrl}", and value: "${ruleArgs}"`)
+      await context.github.graphql(`
+        mutation AddLabelToCard($issueId: ID!, $labelId: ID!) {
+          addLabelsToLabelable(input:{labelIds:[$labelId],labelableId:$issueId}) {
+            labelable {
+              labels(first:10) {
+                edges {
+                  node {
+                    name
+                  }
+                }
+              }
+              ... on Issue {
+                url
+              }
+              ... on PullRequest {
+                url
+              }
+            }
+          }
+        }
+      `, { issueId: issueId, labelId: labelId })
     }
   }
 ]

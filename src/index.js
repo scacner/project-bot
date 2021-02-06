@@ -9,7 +9,7 @@ async function sleep (ms) {
     }, ms)
   })
 }
-// Often, there is a delay between the webhook firing and GaphQL updating
+// Often, there is a delay between the webhook firing and GraphQL updating
 async function retryQuery (context, query, args) {
   try {
     return await context.github.graphql(query, args)
@@ -19,14 +19,25 @@ async function retryQuery (context, query, args) {
   }
 }
 
+// For Issue URLs that come from a Project Card's content_url, the URL needs to be converted to a html_url format
+async function convertToIssueUrl (url) {
+  const parsedURL = url.match(/^(.*?):\/\/(.*?)\/.*?\/repos\/(.*?)$/)
+  if (parsedURL != null && parsedURL.length === 4) {
+    return parsedURL[1] + '://' + parsedURL[2] + '/' + parsedURL[3]
+  }
+  return null
+}
+
 // Common GraphQL Fragment for getting the Automation Cards out of the bottom of every Column in a Project
 const PROJECT_FRAGMENT = `
   name
   id
+  databaseId
   columns(first: 50) {
     totalCount
     nodes {
       id
+      databaseId
       url
       firstCards: cards(first: 1, archivedStates: NOT_ARCHIVED) {
         totalCount
@@ -56,10 +67,16 @@ module.exports = (robot) => {
   logger.info(`Starting up`)
 
   // Register all of the automation commands
-  automationCommands.forEach(({ createsACard, webhookName, ruleName, ruleMatcher }) => {
+  automationCommands.forEach(({ createsACard, modifyIssue, webhookName, ruleName, ruleMatcher, ruleAction }) => {
     logger.trace(`Attaching listener for ${webhookName}`)
     robot.on(webhookName, async function (context) {
-      const issueUrl = context.payload.issue ? context.payload.issue.html_url : context.payload.pull_request.html_url.replace('/pull/', '/issues/')
+      const issueUrl = context.payload.issue
+        ? context.payload.issue.html_url
+        : context.payload.pull_request
+          ? context.payload.pull_request.html_url.replace('/pull/', '/issues/')
+          : context.payload.project_card && context.payload.project_card.content_url !== undefined
+            ? await convertToIssueUrl(context.payload.project_card.content_url)
+            : null
       logger.trace(`Event received for ${webhookName}`)
 
       // A couple commands occur when a new Issue or Pull Request is created.
@@ -163,6 +180,9 @@ module.exports = (robot) => {
                   }
                 }
               `, { cardId: issueCard.id, columnId: column.id })
+            }
+            if (modifyIssue) {
+              await ruleAction(logger, context, issueUrl, issueCard.project.databaseId, column.databaseId, ruleArgs)
             }
           }
         }
