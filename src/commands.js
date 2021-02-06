@@ -168,7 +168,7 @@ module.exports = [
         return false
       }
 
-      const graphResourceResult = context.github.graphql(`
+      const graphResourceResult = await context.github.graphql(`
         query FindIssueID($issueUrl: URI!) {
           resource(url: $issueUrl) {
             ... on Issue {
@@ -188,7 +188,7 @@ module.exports = [
       const repoName = resource.repository.name
       const repoOwner = resource.repository.owner.login
 
-      const graphLabelResult = context.github.graphql(`
+      const graphLabelResult = await context.github.graphql(`
         query FindLabelID(
           $labelName: String!,
           $repoName: String!,
