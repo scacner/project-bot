@@ -268,7 +268,7 @@ module.exports = [
       const assignees = resource.assignees.totalCount
       const issueProjectCards = resource.projectCards.edges
 
-      if (assignees === 0) {
+      if (assignees !== 0) {
         logger.debug(`Issue "${issueId}" already has assignee(s)`)
         return false
       }
