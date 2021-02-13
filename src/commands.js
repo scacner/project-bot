@@ -164,7 +164,11 @@ module.exports = [
       }
       const contextColumnId = context.payload.project_card.column_id
 
-      if (contextProjectId !== projectId || contextColumnId !== columnId) {
+      // Make sure Project ID and Column ID are a match between context and automation card.
+      if (contextProjectId !== projectId) {
+        return false
+      }
+      if (contextColumnId !== columnId) {
         return false
       }
 
@@ -226,6 +230,68 @@ module.exports = [
           }
         }
       `, { issueId: issueId, labelId: labelId })
+      return true
+    }
+  },
+  {
+    modifyIssue: true,
+    ruleName: 'assign_issue_on_branch_create',
+    webhookName: 'create',
+    ruleMatcher: ALWAYS_FALSE,
+    ruleAction: async function (logger, context, issueUrl, projectId, columnId, ruleArgs) {
+      const branch = context.payload.ref
+      const senderId = context.payload.sender.node_id
+
+      const graphResourceResult = await context.github.graphql(`
+        query FindIssueID($issueUrl: URI!) {
+          resource(url: $issueUrl) {
+            ... on Issue {
+              id
+              assignees {
+                totalCount
+              }
+              projectCards {
+                edges {
+                  node {
+                    project {
+                      databaseId
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `, { issueUrl: issueUrl })
+      const { resource } = graphResourceResult
+      const issueId = resource.id
+      const assignees = resource.assignees.totalCount
+      const issueProjectCards = resource.projectCards.edges
+
+      if (assignees === 0) {
+        logger.debug(`Issue "${issueId}" already has assignee(s)`)
+        return false
+      }
+      for (const node of issueProjectCards) {
+        // Make sure there is a matching Project ID between Issue and automation card.
+        if (node.project.databaseId === projectId) {
+          logger.info(`Assigning User ${senderId} to Issue "${issueId}" because of "assign_issue_on_branch_create", branch "${branch}", and Issue URL "${issueUrl}"`)
+          await context.github.graphql(`
+            mutation AssignIssue($issueId: ID!, $userId: ID!) {
+              addAssigneesToAssignable(input:{assignableId:$issueId,assigneeIds:[$userId]}) {
+                assignable {
+                  assignees {
+                    totalCount
+                  }
+                }
+              }
+            }
+          `, { issueId: issueId, userId: senderId })
+          return true
+        }
+      }
+      logger.debug(`Looped through all Project Cards of Issue "${issueId}" and no matching Project "${projectId}" was found. Odd.`)
+      return false
     }
   }
 ]
