@@ -272,7 +272,7 @@ module.exports = [
         logger.debug(`Issue "${issueId}" already has assignee(s)`)
         return false
       }
-      for (const node of issueProjectCards) {
+      for (const { node } of issueProjectCards) {
         // Make sure there is a matching Project ID between Issue and automation card.
         if (node.project.databaseId === projectId) {
           logger.info(`Assigning User ${senderId} to Issue "${issueId}" because of "assign_issue_on_branch_create", branch "${branch}", and Issue URL "${issueUrl}"`)
