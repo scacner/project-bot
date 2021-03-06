@@ -73,7 +73,7 @@ To add items to the project board, you have these two rules:
 
 ## Move items
 
-After an item has been added to a project board (manually or by the previous rules) it can be moved to another column by one of the following rules:
+After an item has been added to a project board (manually or by the previous rules), it can be moved to another column by one of the following rules:
 
 ### Issues
 - `edited_issue`: When an Issue is edited
@@ -98,7 +98,14 @@ After an item has been added to a project board (manually or by the previous rul
 - `added_label`: (requires exactly one argument, the string representing the name of the label)
 - `removed_label`: (requires exactly one argument, the string representing the name of the label)
 
-### Other
+## Update items
+
+To update items already on the project board, the following rules are available:
+
+- `add_label`: (requires exactly one argument, the string representing the name of the label) Adds label to item moved to the column the rule is located
+- `assign_issue_on_branch_create`: When a branch is created that starts with a valid number of an unassigned issue that's in a project with this rule listed, the issue is assigned to the branch creator. Note: because this rule does not move an item on a project board, the rule can be placed in any project column.
+
+## Other
 
 - Not finding the event you would like? Just create a new Issue in this Repository!
 
