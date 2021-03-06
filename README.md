@@ -7,7 +7,7 @@
 
 Do you like the idea of [GitHub's Project Automation feature](https://github.com/blog/2458-keep-your-project-boards-up-to-date-automatically) but find it lacking?
 
-This bot will **automatically** _add_ new Issues or Pull Requests to a Project board based on specially formatted Cards in each Column of a Project. It also allows you to customize the rules for _moving_ Issues between Columns.
+This bot will **automatically** _add_ new Issues or Pull Requests to a Project board based on specially formatted Cards in each Column of a Project. It also allows you to customize the rules for _moving_ Issues between Columns. Additionally, this bot can modify the Issues or Pull Requests that are on a Project board.
 
 
 ## Installation
@@ -103,7 +103,7 @@ After an item has been added to a project board (manually or by the previous rul
 To update items already on the project board, the following rules are available:
 
 - `add_label`: (requires exactly one argument, the string representing the name of the label) Adds label to item moved to the column the rule is located
-- `assign_issue_on_branch_create`: When a branch is created that starts with a valid number of an unassigned issue that's in a project with this rule listed, the issue is assigned to the branch creator. Note: because this rule does not move an item on a project board, the rule can be placed in any project column.
+- `assign_issue_on_branch_create`: When a branch is created that starts with a valid number of an unassigned issue that's in a Project with this rule listed, the issue is assigned to the branch creator. Note: because this rule does not move an item on a Project board, the rule can be placed in any Project column.
 
 ## Other
 
