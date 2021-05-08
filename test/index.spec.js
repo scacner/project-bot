@@ -5,7 +5,8 @@ const { Probot } = require('probot')
 
 const pullrequestOpened = require('./fixtures/pull_request.opened.json')
 const issueOpened = require('./fixtures/issue.opened.json')
-const { buildCard, getAllProjectCards, getCardAndColumnAutomationCards } = require('./util')
+const create = require('./fixtures/create.json')
+const { buildCard, getAllProjectCards, getCardAndColumnAutomationCards, findIssueId } = require('./util')
 
 nock.disableNetConnect()
 
@@ -279,6 +280,20 @@ describe('project-bot integration tests', () => {
     })
   })
 
+  describe('update item commands', () => {
+    test('assign_issue_on_branch_create', async () => {
+      await checkUpdateCommand(true, 1, { assign_issue_on_branch_create: true }, 'create', create, 0, `autoid-3`)
+    })
+
+    test('assign_issue_on_branch_create (unsatisfied) because issue is already assigned', async () => {
+      await checkUpdateCommand(false, 1, { assign_issue_on_branch_create: true }, 'create', create, 1)
+    })
+
+    test('assign_issue_on_branch_create (unsatisfied) because payload card id does not match a project id associated to issue', async () => {
+      await checkUpdateCommand(false, 1, { assign_issue_on_branch_create: true }, 'create', create, 0, `random-id`)
+    })
+  })
+
   describe('misc', () => {
     test('ignores non-note cards', async () => {
       const payload = { ...issueOpened }
@@ -408,6 +423,55 @@ describe('project-bot integration tests', () => {
           expect(requestBody.query).toContain('mutation moveCard')
           expect(requestBody.variables.cardId).toBeTruthy()
           expect(requestBody.variables.columnId).toBeTruthy()
+        })
+    }
+
+    // Receive a webhook event
+    await probot.receive({ name: eventName, payload })
+
+    if (!nock.isDone()) {
+      console.error(nock.pendingMocks())
+      expect(nock.isDone()).toEqual(true)
+    }
+  }
+
+  const checkUpdateCommand = async (shouldUpdate, numGetCard, card, eventName, payload, assigneesCount, databaseId) => {
+    const automationCards = [[
+      typeof card === 'string' ? card : buildCard(card)
+    ]]
+
+    // query getCardAndColumnAutomationCards
+    const r1 = { data: getCardAndColumnAutomationCards('repo-name', automationCards) }
+    for (let i = 0; i < numGetCard; i++) {
+      nock('https://api.github.com')
+        .post('/graphql')
+        .reply(200, (uri, requestBody) => {
+          requestBody = JSON.parse(requestBody)
+          expect(requestBody.query).toContain('query getCardAndColumnAutomationCards')
+          expect(requestBody.variables.issueUrl).toBeTruthy()
+          return r1
+        })
+    }
+
+    // query FindIssueID
+    nock('https://api.github.com')
+      .post('/graphql')
+      .reply(200, (uri, requestBody) => {
+        requestBody = JSON.parse(requestBody)
+        expect(requestBody.query).toContain('query FindIssueID')
+        expect(requestBody.variables.issueUrl).toBeTruthy()
+        return { data: findIssueId(assigneesCount, databaseId) }
+      })
+
+    if (shouldUpdate) {
+      // mutation AssignIssue
+      nock('https://api.github.com')
+        .post('/graphql')
+        .reply(200, (uri, requestBody) => {
+          requestBody = JSON.parse(requestBody)
+          expect(requestBody.query).toContain('mutation AssignIssue')
+          expect(requestBody.variables.issueId).toBeTruthy()
+          expect(requestBody.variables.userId).toBeTruthy()
         })
     }
 

@@ -39,6 +39,7 @@ const buildProject = (name, cardsInColumns) => {
   return {
     name,
     id: freshId(),
+    databaseId: freshId(),
     columns: {
       nodes: cardsInColumns.map((columnCards) => {
         const id = freshId()
@@ -94,25 +95,6 @@ const buildOrgGraphQLResponseNew = (repoName, cards) => {
   }
 }
 
-// query getCardAndColumnAutomationCards($url: URI!) {
-//   resource(url: $url) {
-//     ... on Issue {
-//       projectCards(first: 10) {
-//         nodes {
-//           id
-//           url
-//           column {
-//             name
-//             id
-//           }
-//           project {
-//             ${PROJECT_FRAGMENT}
-//           }
-//         }
-//       }
-//     }
-//   }
-// }
 const getCardAndColumnAutomationCards = (repoName, automationCards) => {
   return {
     resource: {
@@ -133,9 +115,32 @@ const getCardAndColumnAutomationCards = (repoName, automationCards) => {
   }
 }
 
+const findIssueId = (assigneesCount, databaseId) => {
+  return {
+    resource: {
+      id: 'issue-id',
+      assignees: {
+        totalCount: assigneesCount
+      },
+      projectCards: {
+        edges: [
+          {
+            node: {
+              project: {
+                databaseId: databaseId
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+
 module.exports = {
   buildCard,
   getCardAndColumnAutomationCards,
   getAllProjectCards,
-  buildOrgGraphQLResponseNew
+  buildOrgGraphQLResponseNew,
+  findIssueId
 }
