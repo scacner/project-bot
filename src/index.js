@@ -28,7 +28,7 @@ async function convertContentUrlToIssueUrl (url) {
   return null
 }
 
-// For Issue URLs that come from a Project Card's content_url, the URL needs to be converted to a html_url format
+// If a new branch's name starts with an Issue number, create its Issue URL from repository.html_url
 async function createIssueUrl (repoUrl, branch) {
   const parsedBranch = branch.match(/^(\d+).*$/)
   if (parsedBranch != null && parsedBranch.length === 2) {

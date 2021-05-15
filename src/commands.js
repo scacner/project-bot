@@ -206,6 +206,12 @@ module.exports = [
         }
       `, { labelName: ruleArgs[0], repoName: repoName, repoOwner: repoOwner })
       const { repository } = graphLabelResult
+
+      // Check for label id. Log error and don't continue command if no label id
+      if (repository.label == null || repository.label.id === undefined) {
+        logger.error(`No label id returned from query`)
+        return false
+      }
       const labelId = repository.label.id
 
       logger.info(`Adding Label ${labelId} to Issue "${issueId}" because of "add_label", Issue URL "${issueUrl}", and value: "${ruleArgs}"`)

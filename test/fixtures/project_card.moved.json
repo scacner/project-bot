@@ -7,9 +7,9 @@
   },
   "project_card": {
     "url": "https://github.com/api/v3/projects/columns/cards/3",
-    "project_url": "https://github.com/api/v3/projects/1234",
+    "project_url": "https://github.com/api/v3/projects/3",
     "column_url": "https://github.com/api/v3/projects/columns/2",
-    "column_id": 2,
+    "column_id": 6,
     "id": 3,
     "note": null,
     "archived": false,

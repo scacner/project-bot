@@ -6,7 +6,8 @@ const { Probot } = require('probot')
 const pullrequestOpened = require('./fixtures/pull_request.opened.json')
 const issueOpened = require('./fixtures/issue.opened.json')
 const create = require('./fixtures/create.json')
-const { buildCard, getAllProjectCards, getCardAndColumnAutomationCards, findIssueId } = require('./util')
+const projectcardMoved = require('./fixtures/project_card.moved.json')
+const { buildCard, getAllProjectCards, getCardAndColumnAutomationCards, findIssueId, getLabelId } = require('./util')
 
 nock.disableNetConnect()
 
@@ -281,16 +282,49 @@ describe('project-bot integration tests', () => {
   })
 
   describe('update item commands', () => {
+    test('add_label', async () => {
+      await checkAddLabelCommand(true, true, 1, { add_label: ['bug'] }, 'project_card.moved', projectcardMoved)
+    })
+
+    test('add_label (unsatisfied) because no label id was returned', async () => {
+      await checkAddLabelCommand(false, true, 1, { add_label: ['bug'] }, 'project_card.moved', projectcardMoved)
+    })
+
+    test('add_label (unsatisfied) because no label name provided for rule', async () => {
+      await checkAddLabelCommand(false, false, 1, { add_label: [] }, 'project_card.moved', projectcardMoved)
+    })
+
+    test('add_label (unsatisfied) because Column ID is not a match between context and automation card', async () => {
+      const payload = { ...projectcardMoved }
+      payload.project_card.column_id = 1234
+
+      await checkAddLabelCommand(false, false, 1, { add_label: ['bug'] }, 'project_card.moved', payload)
+    })
+
+    test('add_label (unsatisfied) because Project ID is not a match between context and automation card', async () => {
+      const payload = { ...projectcardMoved }
+      payload.project_card.project_url = 'https://github.com/api/v3/projects/1234'
+
+      await checkAddLabelCommand(false, false, 1, { add_label: ['bug'] }, 'project_card.moved', payload)
+    })
+
+    test('add_label (unsatisfied) because project number could not be parsed from Project URL', async () => {
+      const payload = { ...projectcardMoved }
+      payload.project_card.project_url = 'https://github.com/api/v3/projects/'
+
+      await checkAddLabelCommand(false, false, 1, { add_label: ['bug'] }, 'project_card.moved', payload)
+    })
+
     test('assign_issue_on_branch_create', async () => {
-      await checkUpdateCommand(true, 1, { assign_issue_on_branch_create: true }, 'create', create, 0, `autoid-3`)
+      await checkAssignIssueCommand(true, 1, { assign_issue_on_branch_create: true }, 'create', create, 0, 3)
     })
 
     test('assign_issue_on_branch_create (unsatisfied) because issue is already assigned', async () => {
-      await checkUpdateCommand(false, 1, { assign_issue_on_branch_create: true }, 'create', create, 1)
+      await checkAssignIssueCommand(false, 1, { assign_issue_on_branch_create: true }, 'create', create, 1)
     })
 
     test('assign_issue_on_branch_create (unsatisfied) because payload card id does not match a project id associated to issue', async () => {
-      await checkUpdateCommand(false, 1, { assign_issue_on_branch_create: true }, 'create', create, 0, `random-id`)
+      await checkAssignIssueCommand(false, 1, { assign_issue_on_branch_create: true }, 'create', create, 0, 1234)
     })
   })
 
@@ -435,7 +469,7 @@ describe('project-bot integration tests', () => {
     }
   }
 
-  const checkUpdateCommand = async (shouldUpdate, numGetCard, card, eventName, payload, assigneesCount, databaseId) => {
+  const checkAssignIssueCommand = async (shouldAssign, numGetCard, card, eventName, payload, assigneesCount, databaseId) => {
     const automationCards = [[
       typeof card === 'string' ? card : buildCard(card)
     ]]
@@ -463,7 +497,7 @@ describe('project-bot integration tests', () => {
         return { data: findIssueId(assigneesCount, databaseId) }
       })
 
-    if (shouldUpdate) {
+    if (shouldAssign) {
       // mutation AssignIssue
       nock('https://api.github.com')
         .post('/graphql')
@@ -472,6 +506,87 @@ describe('project-bot integration tests', () => {
           expect(requestBody.query).toContain('mutation AssignIssue')
           expect(requestBody.variables.issueId).toBeTruthy()
           expect(requestBody.variables.userId).toBeTruthy()
+        })
+    }
+
+    // Receive a webhook event
+    await probot.receive({ name: eventName, payload })
+
+    if (!nock.isDone()) {
+      console.error(nock.pendingMocks())
+      expect(nock.isDone()).toEqual(true)
+    }
+  }
+
+  const checkAddLabelCommand = async (shouldAddLabel, shouldGetLabelId, numGetCard, card, eventName, payload, labelId) => {
+    const automationCards = [[
+      typeof card === 'string' ? card : buildCard(card)
+    ]]
+
+    // query getCardAndColumnAutomationCards
+    const r1 = { data: getCardAndColumnAutomationCards('repo-name', automationCards) }
+    for (let i = 0; i < numGetCard; i++) {
+      nock('https://api.github.com')
+        .post('/graphql')
+        .reply(200, (uri, requestBody) => {
+          requestBody = JSON.parse(requestBody)
+          expect(requestBody.query).toContain('query getCardAndColumnAutomationCards')
+          expect(requestBody.variables.issueUrl).toBeTruthy()
+          return r1
+        })
+    }
+
+    if (shouldGetLabelId) {
+      // query FindIssueID
+      nock('https://api.github.com')
+        .post('/graphql')
+        .reply(200, (uri, requestBody) => {
+          requestBody = JSON.parse(requestBody)
+          expect(requestBody.query).toContain('query FindIssueID')
+          expect(requestBody.variables.issueUrl).toBeTruthy()
+          return {
+            data: {
+              resource: {
+                id: 'issue-id',
+                repository: {
+                  name: 'repo-name',
+                  owner: {
+                    login: 'login-name'
+                  }
+                }
+              }
+            }
+          }
+        })
+
+      // query FindLabelID
+      nock('https://api.github.com')
+        .post('/graphql')
+        .reply(200, (uri, requestBody) => {
+          requestBody = JSON.parse(requestBody)
+          expect(requestBody.query).toContain('query FindLabelID')
+          expect(requestBody.variables.labelName).toBeTruthy()
+          expect(requestBody.variables.repoName).toBeTruthy()
+          expect(requestBody.variables.repoOwner).toBeTruthy()
+          return {
+            data: {
+              repository: {
+                label: getLabelId(shouldAddLabel)
+              }
+            }
+          }
+        })
+    }
+
+    if (shouldAddLabel) {
+      // mutation AssignIssue
+      nock('https://api.github.com')
+        .post('/graphql')
+        .reply(200, (uri, requestBody) => {
+          requestBody = JSON.parse(requestBody)
+          expect(requestBody.query).toContain('mutation AddLabelToCard')
+          expect(requestBody.variables.issueId).toBeTruthy()
+          expect(requestBody.variables.labelId).toBeTruthy()
         })
     }
 

@@ -31,15 +31,16 @@ const buildCard = (rules) => {
 }
 const buildProject = (name, cardsInColumns) => {
   let id = 1
-  const freshId = () => {
+  // If number argument defined, returns new Number id; default return is new alphanumeric id
+  const freshId = (number) => {
     id += 1
-    return `autoid-${id}`
+    return number ? id : `autoid-${id}`
   }
 
   return {
     name,
     id: freshId(),
-    databaseId: freshId(),
+    databaseId: freshId(true),
     columns: {
       nodes: cardsInColumns.map((columnCards) => {
         const id = freshId()
@@ -53,6 +54,7 @@ const buildProject = (name, cardsInColumns) => {
         })
         return {
           id,
+          databaseId: freshId(true),
           url: `column-url-${id}`,
           firstCards: {
             totalCount: cards.length,
@@ -137,10 +139,15 @@ const findIssueId = (assigneesCount, databaseId) => {
   }
 }
 
+const getLabelId = (returnLabel) => {
+  return returnLabel ? { id: 'label-id' } : null
+}
+
 module.exports = {
   buildCard,
   getCardAndColumnAutomationCards,
   getAllProjectCards,
   buildOrgGraphQLResponseNew,
-  findIssueId
+  findIssueId,
+  getLabelId
 }
