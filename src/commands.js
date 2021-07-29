@@ -301,5 +301,19 @@ module.exports = [
       logger.debug(`Looped through all Project Cards of Issue "${issueId}" and no matching Project "${projectId}" was found. Odd.`)
       return false
     }
+  },
+  {
+    modifyIssue: true,
+    ruleName: 'close_issue',
+    webhookName: 'project_card.moved',
+    ruleMatcher: ALWAYS_FALSE,
+    ruleAction: async function (logger, context, issueUrl, projectId, columnId, ruleArgs) {
+      // Make sure Project ID and Column ID are a match between context and automation card.
+      if (!validateProjectColumnMatch(logger, context, projectId, columnId)) {
+        return false
+      }
+
+
+    }
   }
 ]
