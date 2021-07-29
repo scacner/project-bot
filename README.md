@@ -104,6 +104,7 @@ To update items already on the project board, the following rules are available:
 
 - `add_label`: (requires exactly one argument, the string representing the name of the label) Adds defined label to item
 - `assign_issue_on_branch_create`: When a branch is created that starts with a valid number of an unassigned issue that's in a Project with this rule listed, the issue is assigned to the branch creator. Note: because this rule does not move an item on a Project board, the rule can be placed in any Project column.
+- `close_issue`: Closes an issue (possibly PR as well)
 
 ## Other
 
