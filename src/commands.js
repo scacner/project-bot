@@ -1,6 +1,21 @@
 function ALWAYS_TRUE () { return true }
 function ALWAYS_FALSE () { return false }
 
+function validateProjectColumnMatch (logger, context, projectId, columnId) {
+  const projectUrl = context.payload.project_card.project_url
+  const contextProjectIdRegexMatch = projectUrl.match(/\d+$/)
+  const contextProjectId = contextProjectIdRegexMatch != null && contextProjectIdRegexMatch.length === 1
+    ? Number(contextProjectIdRegexMatch[0]) : null
+  if (contextProjectId === null) {
+    logger.error(`Unable to parse project number from Project URL "${projectUrl}"`)
+    return false
+  }
+  const contextColumnId = context.payload.project_card.column_id
+
+  // Make sure Project ID and Column ID are a match between context and automation card.
+  return contextProjectId === projectId && contextColumnId === columnId
+}
+
 module.exports = [
   { ruleName: 'edited_issue', webhookName: 'issues.edited', ruleMatcher: ALWAYS_TRUE },
   { ruleName: 'demilestoned_issue', webhookName: 'issues.demilestoned', ruleMatcher: ALWAYS_TRUE },
@@ -154,21 +169,8 @@ module.exports = [
         return false
       }
 
-      const projectUrl = context.payload.project_card.project_url
-      const contextProjectIdRegexMatch = projectUrl.match(/\d+$/)
-      const contextProjectId = contextProjectIdRegexMatch != null && contextProjectIdRegexMatch.length === 1
-        ? Number(contextProjectIdRegexMatch[0]) : null
-      if (contextProjectId === null) {
-        logger.error(`Unable to parse project number from Project URL "${projectUrl}"`)
-        return false
-      }
-      const contextColumnId = context.payload.project_card.column_id
-
       // Make sure Project ID and Column ID are a match between context and automation card.
-      if (contextProjectId !== projectId) {
-        return false
-      }
-      if (contextColumnId !== columnId) {
+      if (!validateProjectColumnMatch(logger, context, projectId, columnId)) {
         return false
       }
 
