@@ -32,7 +32,7 @@
     "collectCoverage": true
   },
   "dependencies": {
-    "commonmark": "^0.29.0",
+    "commonmark": "^0.30.0",
     "probot": "^9.2.20"
   },
   "devDependencies": {
