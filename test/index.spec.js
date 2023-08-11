@@ -17,9 +17,7 @@ describe('project-bot integration tests', () => {
   beforeEach(() => {
     nock.cleanAll()
     probot = new Probot({ githubToken: 'faketoken' })
-    const app = probot.load(projectBot)
-    // just return a test token
-    app.app = () => 'test'
+    probot.load(projectBot)
   })
 
   test('sanity', async () => {

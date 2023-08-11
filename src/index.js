@@ -12,10 +12,10 @@ async function sleep (ms) {
 // Often, there is a delay between the webhook firing and GraphQL updating
 async function retryQuery (context, query, args) {
   try {
-    return await context.github.graphql(query, args)
+    return await context.octokit.graphql(query, args)
   } catch (err) {
     await sleep(1000)
-    return context.github.graphql(query, args)
+    return context.octokit.graphql(query, args)
   }
 }
 
@@ -70,9 +70,6 @@ const PROJECT_FRAGMENT = `
 
 module.exports = (robot) => {
   const logger = robot.log.child({ name: 'project-bot' })
-  // Increase the maxListenerCount by the number of automationCommands
-  // because we register a bunch of listeners
-  robot.events.setMaxListeners(robot.events.getMaxListeners() + automationCommands.length)
   logger.info(`Starting up`)
 
   // Register all of the automation commands
@@ -140,7 +137,7 @@ module.exports = (robot) => {
           for (const { column, ruleArgs } of automationRules) {
             if (await ruleMatcher(logger, context, ruleArgs)) {
               logger.info(`Creating Card for "${issueUrl}" to column ${column.id} because of "${ruleName}" and value: "${ruleArgs}"`)
-              await context.github.graphql(`
+              await context.octokit.graphql(`
                 mutation createCard($contentId: ID!, $columnId: ID!) {
                   addProjectCard(input: {contentId: $contentId, projectColumnId: $columnId}) {
                     clientMutationId
@@ -188,7 +185,7 @@ module.exports = (robot) => {
               for (const { column, ruleArgs } of automationRules) {
                 if (await ruleMatcher(logger, context, ruleArgs)) {
                   logger.info(`Moving Card ${issueCard.id} for "${issueUrl}" to column ${column.id} because of "${ruleName}" and value: "${ruleArgs}"`)
-                  await context.github.graphql(`
+                  await context.octokit.graphql(`
                     mutation moveCard($cardId: ID!, $columnId: ID!) {
                       moveProjectCard(input: {cardId: $cardId, columnId: $columnId}) {
                         clientMutationId

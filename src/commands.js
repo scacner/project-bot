@@ -129,8 +129,8 @@ module.exports = [
     ruleMatcher: async function (logger, context, ruleArgs) {
       // See https://developer.github.com/v3/activity/events/types/#pullrequestreviewevent
       // Check if there are any Pending or Rejected reviews and ensure there is at least one Accepted one
-      const issue = context.issue()
-      const { data: reviews } = await context.github.pulls.listReviews({ owner: issue.owner, repo: issue.repo, pull_number: issue.number })
+      const pullRequest = context.pullRequest()
+      const { data: reviews } = await context.octokit.pulls.listReviews(pullRequest)
       // Check that there is at least one Accepted
       const hasAccepted = reviews.filter((review) => review.state === 'APPROVED').length >= 1
       const hasRejections = reviews.filter((review) => review.state === 'REQUEST_CHANGES').length >= 1
@@ -172,7 +172,7 @@ module.exports = [
         return false
       }
 
-      const graphResourceResult = await context.github.graphql(`
+      const graphResourceResult = await context.octokit.graphql(`
         query FindIssueID($issueUrl: URI!) {
           resource(url: $issueUrl) {
             ... on Issue {
@@ -192,7 +192,7 @@ module.exports = [
       const repoName = resource.repository.name
       const repoOwner = resource.repository.owner.login
 
-      const graphLabelResult = await context.github.graphql(`
+      const graphLabelResult = await context.octokit.graphql(`
         query FindLabelID(
           $labelName: String!,
           $repoName: String!,
@@ -215,7 +215,7 @@ module.exports = [
       const labelId = repository.label.id
 
       logger.info(`Adding Label ${labelId} to Issue "${issueId}" because of "add_label", Issue URL "${issueUrl}", and value: "${ruleArgs}"`)
-      await context.github.graphql(`
+      await context.octokit.graphql(`
         mutation AddLabelToCard($issueId: ID!, $labelId: ID!) {
           addLabelsToLabelable(input:{labelIds:[$labelId],labelableId:$issueId}) {
             labelable {
@@ -248,7 +248,7 @@ module.exports = [
       const branch = context.payload.ref
       const senderId = context.payload.sender.node_id
 
-      const graphResourceResult = await context.github.graphql(`
+      const graphResourceResult = await context.octokit.graphql(`
         query FindIssueID($issueUrl: URI!) {
           resource(url: $issueUrl) {
             ... on Issue {
@@ -282,7 +282,7 @@ module.exports = [
         // Make sure there is a matching Project ID between Issue and automation card.
         if (node.project.databaseId === projectId) {
           logger.info(`Assigning User ${senderId} to Issue "${issueId}" because of "assign_issue_on_branch_create", branch "${branch}", and Issue URL "${issueUrl}"`)
-          await context.github.graphql(`
+          await context.octokit.graphql(`
             mutation AssignIssue($issueId: ID!, $userId: ID!) {
               addAssigneesToAssignable(input:{assignableId:$issueId,assigneeIds:[$userId]}) {
                 assignable {
