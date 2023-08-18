@@ -129,7 +129,7 @@ const findIssueId = (assigneesCount, databaseId) => {
           {
             node: {
               project: {
-                databaseId: databaseId
+                databaseId
               }
             }
           }

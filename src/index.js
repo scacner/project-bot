@@ -70,7 +70,7 @@ const PROJECT_FRAGMENT = `
 
 module.exports = (robot) => {
   const logger = robot.log.child({ name: 'project-bot' })
-  logger.info(`Starting up`)
+  logger.info('Starting up')
 
   // Register all of the automation commands
   automationCommands.forEach(({ createsACard, modifyIssue, webhookName, ruleName, ruleMatcher, ruleAction }) => {
@@ -119,7 +119,7 @@ module.exports = (robot) => {
                 }
               }
             }
-          `, { issueUrl: issueUrl })
+          `, { issueUrl })
           const { resource } = graphResult
 
           let allProjects = []
@@ -168,7 +168,7 @@ module.exports = (robot) => {
                 }
               }
             }
-          `, { issueUrl: issueUrl })
+          `, { issueUrl })
           logger.debug(graphResult, 'Retrieved results')
           const { resource } = graphResult
           // Only continue if resource is not null.

@@ -61,7 +61,7 @@ module.exports = [
       if (ruleArgs[0] !== true) {
         return context.payload.assignee.login === ruleArgs[0]
       } else {
-        logger.error(`assigned_to.issue requires a username but it is missing`)
+        logger.error('assigned_to.issue requires a username but it is missing')
       }
     }
   },
@@ -150,14 +150,15 @@ module.exports = [
     ruleAction: async function (logger, context, issueUrl, projectId, columnId, ruleArgs) {
       // Currently, this rule will only apply the first label name provided in ruleArgs
       if (ruleArgs.length === 0) {
-        logger.error(`No label names provided for "add_label" rule`)
+        logger.error('No label names provided for "add_label" rule')
         return false
       }
 
       const projectUrl = context.payload.project_card.project_url
       const contextProjectIdRegexMatch = projectUrl.match(/\d+$/)
       const contextProjectId = contextProjectIdRegexMatch != null && contextProjectIdRegexMatch.length === 1
-        ? Number(contextProjectIdRegexMatch[0]) : null
+        ? Number(contextProjectIdRegexMatch[0])
+        : null
       if (contextProjectId === null) {
         logger.error(`Unable to parse project number from Project URL "${projectUrl}"`)
         return false
@@ -186,7 +187,7 @@ module.exports = [
             }
           }
         }
-      `, { issueUrl: issueUrl })
+      `, { issueUrl })
       const { resource } = graphResourceResult
       const issueId = resource.id
       const repoName = resource.repository.name
@@ -204,12 +205,12 @@ module.exports = [
             }
           }
         }
-      `, { labelName: ruleArgs[0], repoName: repoName, repoOwner: repoOwner })
+      `, { labelName: ruleArgs[0], repoName, repoOwner })
       const { repository } = graphLabelResult
 
       // Check for label id. Log error and don't continue command if no label id
       if (repository.label == null || repository.label.id === undefined) {
-        logger.error(`No label id returned from query`)
+        logger.error('No label id returned from query')
         return false
       }
       const labelId = repository.label.id
@@ -235,7 +236,7 @@ module.exports = [
             }
           }
         }
-      `, { issueId: issueId, labelId: labelId })
+      `, { issueId, labelId })
       return true
     }
   },
@@ -268,7 +269,7 @@ module.exports = [
             }
           }
         }
-      `, { issueUrl: issueUrl })
+      `, { issueUrl })
       const { resource } = graphResourceResult
       const issueId = resource.id
       const assignees = resource.assignees.totalCount
@@ -292,7 +293,7 @@ module.exports = [
                 }
               }
             }
-          `, { issueId: issueId, userId: senderId })
+          `, { issueId, userId: senderId })
           return true
         }
       }
