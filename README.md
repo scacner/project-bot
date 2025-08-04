@@ -10,11 +10,13 @@ Do you like the idea of [GitHub's Project Automation feature](https://github.com
 This bot will **automatically** _add_ new Issues or Pull Requests to a Project board based on specially formatted Cards in each Column of a Project. It also allows you to customize the rules for _moving_ Issues between Columns. Additionally, this bot can modify the Issues or Pull Requests that are on a Project board.
 
 
-## Installation
+[//]: # (## Installation)
 
-Go to the [project-bot GitHub App](https://github.com/apps/project-bot) page and click `[Install]` (or `[Configure]` if you already installed it) to have it run on **Public** Project Boards.
+[//]: # ()
+[//]: # (Go to the [project-bot GitHub App]&#40;https://github.com/apps/project-bot&#41; page and click `[Install]` &#40;or `[Configure]` if you already installed it&#41; to have it run on **Public** Project Boards.)
 
-To see what it looks like, you can look at the [GitHub projects for this repository](https://github.com/philschatz/project-bot/projects).
+[//]: # ()
+[//]: # (To see what it looks like, you can look at the [GitHub projects for this repository]&#40;https://github.com/philschatz/project-bot/projects&#41;.)
 
 
 ## Example
