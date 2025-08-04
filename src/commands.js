@@ -129,7 +129,7 @@ module.exports = [
       // See https://developer.github.com/v3/activity/events/types/#pullrequestreviewevent
       // Check if there are any Pending or Rejected reviews and ensure there is at least one Accepted one
       const issue = context.issue()
-      const { data: reviews } = await context.github.pullRequests.listReviews({ owner: issue.owner, repo: issue.repo, pull_number: issue.number })
+      const { data: reviews } = await context.github.pulls.listReviews({ owner: issue.owner, repo: issue.repo, pull_number: issue.number })
       // Check that there is at least one Accepted
       const hasAccepted = reviews.filter((review) => review.state === 'APPROVED').length >= 1
       const hasRejections = reviews.filter((review) => review.state === 'REQUEST_CHANGES').length >= 1
